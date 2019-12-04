@@ -5,8 +5,8 @@ import multiprocessing as mp
 from tqdm import tqdm_notebook
 
 
-def unpack_woe(self, args):
-    return self.woe_binning(*args)
+def unpack_woe(args):
+    return woe_binning(*args)
 
 
 def batch_woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1):
