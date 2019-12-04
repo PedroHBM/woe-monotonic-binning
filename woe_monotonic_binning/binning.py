@@ -167,10 +167,10 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     return woe_summary
 
 
-def apply_bins(dataset, df_woe, iv_threshold=0.02, bin_threshold=2):
+def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2):
     df_bin = pd.DataFrame()
     ivs_list = []
-    for df_col in df_woe:
+    for df_col in dict_woe.values():
         iv_total = df_col.dropna().iv_components.sum()
         if iv_total < iv_threshold or df_col.shape[0] < bin_threshold or iv_total == np.inf:
             continue
