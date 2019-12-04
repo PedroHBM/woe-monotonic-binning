@@ -8,9 +8,9 @@ setup(
   author='PEDRO HENRIQUE BAUMGRATZ MEIRELLES',
   author_email='pedrohbm@poli.ufrj.br',
   url='https://github.com/PedroHBM/woe-monotonic-binning',
-  download_url='https://github.com/user/reponame/archive/v_01.tar.gz',
+  download_url='https://github.com/PedroHBM/woe-monotonic-binning/archive/0.1.tar.gz',
   keywords=['WOE', 'BINNING', 'IV', 'LOGISTIC', 'REGRESSION'],
-  install_requires=[            # I get to this in a second
+  install_requires=[            
           'pandas',
           'numpy',
           'scipy',
@@ -18,7 +18,7 @@ setup(
       ],
   classifiers=[
     'Development Status :: 3 - Alpha',
-    'Intended Audience :: Data Scientists',      
+    'Intended Audience :: Data Scientists',
     'Topic :: Data Science :: Analytics :: Statistics',
     'License :: OSI Approved :: MIT License',
     'Programming Language :: Python :: 3',
