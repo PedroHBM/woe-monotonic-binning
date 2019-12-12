@@ -13,7 +13,7 @@ def batch_woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=
     nprocs = mp.cpu_count()
     columns = dataset.columns[dataset.columns != target]
     with mp.Pool(nprocs) as pool:
-        df_list = list(tqdm_notebook(pool.imap(unpack_woe, (('bad', dataset[[column, 'bad']], n_threshold, n_occurences,
+        df_list = list(tqdm_notebook(pool.imap(unpack_woe, ((target, dataset[[column, target]], n_threshold, n_occurences,
                                                              p_threshold) for column in columns)), total=len(columns)))
         pool.close()
         pool.join()

@@ -8,7 +8,7 @@ setup(
   author='PEDRO HENRIQUE BAUMGRATZ MEIRELLES',
   author_email='pedrohbm@poli.ufrj.br',
   url='https://github.com/PedroHBM/woe-monotonic-binning',
-  download_url='https://github.com/PedroHBM/woe-monotonic-binning/archive/v0.1.2-alpha.tar.gz',
+  download_url='https://github.com/PedroHBM/woe-monotonic-binning/archive/v0.1.4-alpha.tar.gz',
   keywords=['WOE', 'BINNING', 'IV', 'LOGISTIC', 'REGRESSION'],
   install_requires=[            
           'pandas',
