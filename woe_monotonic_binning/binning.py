@@ -2,22 +2,27 @@ import numpy as np
 import pandas as pd
 from scipy import stats
 import multiprocessing as mp
-from tqdm import tqdm_notebook
+from joblib import Parallel, delayed
 
 
 def unpack_woe(args):
     return woe_binning(*args)
 
 
-def batch_woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1):
+def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1):
+    from math import ceil
+
     nprocs = mp.cpu_count()
     columns = dataset.columns[dataset.columns != target]
-    with mp.Pool(nprocs) as pool:
-        df_list = list(tqdm_notebook(pool.imap(unpack_woe, ((target, dataset[[column, target]], n_threshold, n_occurences,
-                                                             p_threshold) for column in columns)), total=len(columns)))
-        pool.close()
-        pool.join()
-        return {i.variable[0]: i for i in df_list}
+    if n_threshold is None:
+        min_bin_size = ceil(dataset.shape[0] / 20)
+    else:
+        min_bin_size = n_threshold
+    df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning)
+                                                 (target, dataset[[column, target]],
+                                                  n_threshold=min_bin_size, p_threshold=0.1)
+                                                 for column in columns)
+    return {i.variable[0]: i for i in df_list}
 
 
 def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, sort_overload=None):
@@ -168,29 +173,32 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     return woe_summary
 
 
-def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2):
+def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2, is_df=False):
     df_bin = pd.DataFrame()
-    ivs_list = []
-    for df_col in dict_woe.values():
+    if is_df:
+        values = dict_woe.variable.values
+    else:
+        values = dict_woe.values()
+    for df_col in values:
+        if is_df:
+            df_col = dict_woe[dict_woe.variable == df_col]
         iv_total = df_col.dropna().iv_components.sum()
         if iv_total < iv_threshold or df_col.shape[0] < bin_threshold or iv_total == np.inf:
             continue
-        if iv_total not in ivs_list:
-            column = df_col.variable.loc[0]
-            df_col_dropped = df_col.dropna()
-            bin_cuts = list(df_col_dropped.interval_start_include.values) + [
-                df_col_dropped.interval_end_exclude.values[-1]]
-            labels_woe = list(df_col_dropped.woe.values)
-            if bin_cuts[0] > bin_cuts[-1]:
-                bin_cuts.reverse()
-                labels_woe.reverse()
-                include_left = False
-                include_right = True
-            else:
-                include_left = True
-                include_right = False
-            df_bin[column + '_bin'] = pd.to_numeric(
-                pd.cut(dataset[column].fillna(dataset[column].median()), bin_cuts, include_lowest=include_left,
-                       right=include_right, labels=labels_woe))
-            ivs_list.append(iv_total)
+        column = df_col.variable.loc[0]
+        df_col_dropped = df_col.dropna()
+        bin_cuts = list(df_col_dropped.interval_start_include.values) + [
+            df_col_dropped.interval_end_exclude.values[-1]]
+        labels_woe = list(df_col_dropped.woe.values)
+        if bin_cuts[0] > bin_cuts[-1]:
+            bin_cuts.reverse()
+            labels_woe.reverse()
+            include_left = False
+            include_right = True
+        else:
+            include_left = True
+            include_right = False
+        df_bin[column + '_bin'] = pd.to_numeric(
+            pd.cut(dataset[column].fillna(dataset[column].median()), bin_cuts, include_lowest=include_left,
+                   right=include_right, labels=labels_woe))
     return df_bin
