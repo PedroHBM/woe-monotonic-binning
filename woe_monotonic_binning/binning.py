@@ -173,8 +173,9 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     return woe_summary
 
 
-def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2, is_df=False):
+def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2, is_df=False, remove_100_corr=True):
     df_bin = pd.DataFrame()
+    ivs_list = []
     if is_df:
         values = dict_woe.variable.values
     else:
@@ -198,7 +199,14 @@ def apply_bins(dataset, dict_woe, iv_threshold=0.02, bin_threshold=2, is_df=Fals
         else:
             include_left = True
             include_right = False
-        df_bin[column + '_bin'] = pd.to_numeric(
-            pd.cut(dataset[column].fillna(dataset[column].median()), bin_cuts, include_lowest=include_left,
-                   right=include_right, labels=labels_woe))
+        if remove_100_corr:
+            if iv_total not in ivs_list:
+                df_bin[column + '_bin'] = pd.to_numeric(
+                    pd.cut(dataset[column].fillna(dataset[column].median()), bin_cuts, include_lowest=include_left,
+                           right=include_right, labels=labels_woe))
+                ivs_list.append(iv_total)
+        else:
+            df_bin[column + '_bin'] = pd.to_numeric(
+                pd.cut(dataset[column].fillna(dataset[column].median()), bin_cuts, include_lowest=include_left,
+                       right=include_right, labels=labels_woe))
     return df_bin
