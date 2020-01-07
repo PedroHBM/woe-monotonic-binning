@@ -20,8 +20,8 @@ def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_thres
         min_bin_size = n_threshold
     df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning)
                                                  (target, dataset[[column, target]],
-                                                  n_threshold=min_bin_size, p_threshold=0.1)
-                                                 for column in columns)
+                                                  n_threshold=min_bin_size, n_occurences=n_occurences,
+                                                  p_threshold=p_threshold) for column in columns)
     return {i.variable[0]: i for i in df_list}
 
 
