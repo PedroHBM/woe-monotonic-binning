@@ -9,6 +9,24 @@ def unpack_woe(args):
     return woe_binning(*args)
 
 
+def merge_bins(df, bins_index):
+    bins_index.sort()
+    interval_start_include = df.loc[bins_index[0]].interval_start_include
+    interval_end_exclude = df.loc[bins_index[-1]].interval_end_exclude
+    df_indexed = df[bins_index[0]: bins_index[-1] + 1]
+    size = df_indexed['size'].sum()
+    bads = df_indexed.bads.sum()
+    goods = df_indexed.goods.sum()
+    mean = bads / size
+    dist_good = goods / df.goods.sum()
+    dist_bad = bads / df.bads.sum()
+    woe = np.log(dist_bad / dist_good)
+    iv = (dist_bad - dist_good) * woe
+    df = df.drop(bins_index)
+    df.loc[bins_index[0]] = [df.variable.values[0], interval_start_include, interval_end_exclude, size, mean, bads, goods, dist_good, dist_bad, woe, iv]
+    return df.sort_index().reset_index(drop=True)
+
+
 def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1):
     from math import ceil
 
