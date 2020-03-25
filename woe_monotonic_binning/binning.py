@@ -27,7 +27,52 @@ def merge_bins(df, bins_index):
     return df.sort_index().reset_index(drop=True)
 
 
-def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1):
+def woe_binning_sep(target, column, dataset, sep_value, n_threshold, n_occurences=1, p_threshold=0.1):
+    nan = None
+    a = woe_binning(target, dataset[dataset[column] == sep_value][[target, column]], n_threshold,
+                    n_occurences=n_occurences, p_threshold=p_threshold)
+    dist_bad = a.loc[0].bads / dataset[target].sum()
+    dist_good = a.loc[0].goods / (dataset.shape[0] - dataset[target].sum())
+    a.at[0, 'woe'] = np.log(dist_bad / dist_good)
+    a.at[0, 'dist_good'] = dist_good
+    a.at[0, 'dist_bad'] = dist_bad
+    a.at[0, 'iv_components'] = (dist_bad - dist_good) * a.at[0, 'woe']
+    b = woe_binning(target, dataset[dataset[column] != sep_value][[target, column]], n_threshold,
+                    n_occurences=n_occurences, p_threshold=p_threshold)
+    if np.isnan(b.loc[b.shape[0] - 1, 'interval_start_include']):
+        nan_line = b.loc[b.shape[0] - 1]
+        b = b[:-1]
+        nan = 1
+    if b.loc[0, 'interval_start_include'] < b.loc[b.shape[0] - 1, 'interval_start_include']:
+        if sep_value < b.loc[0, 'interval_end_exclude']:
+            a.at[0, 'interval_end_exclude'] = sep_value + 1e-5
+            a.at[0, 'interval_start_include'] = -np.inf
+            b.at[0, 'interval_start_include'] = sep_value + 1e-5
+            ret = pd.concat([a, b]).reset_index(drop=True)
+        else:
+            print(1)
+            a.at[0, 'interval_start_include'] = sep_value
+            a.at[0, 'interval_end_exclude'] = np.inf
+            b.at[b.shape[0] - 1, 'interval_end_exclude'] = sep_value
+            ret = pd.concat([b, a]).reset_index(drop=True)
+    else:
+        if sep_value < b.loc[0, 'interval_end_exclude']:
+            a.at[0, 'interval_start_include'] = sep_value
+            a.at[0, 'interval_end_exclude'] = -np.inf
+            b.at[b.shape[0] - 1, 'interval_end_exclude'] = sep_value
+            ret = pd.concat([b, a]).reset_index(drop=True)
+        else:
+            a.at[0, 'interval_end_exclude'] = sep_value - 1e-5
+            a.at[0, 'interval_start_include'] = np.inf
+            b.at[0, 'interval_start_include'] = sep_value - 1e-5
+            ret = pd.concat([a, b]).reset_index(drop=True)
+
+    if nan:
+        ret.loc[ret.shape[0]] = nan_line
+    return ret
+
+
+def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1, sep_value=None):
     from math import ceil
 
     nprocs = mp.cpu_count()
@@ -36,10 +81,16 @@ def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_thres
         min_bin_size = ceil(dataset.shape[0] / 20)
     else:
         min_bin_size = n_threshold
-    df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning)
-                                                 (target, dataset[[column, target]],
-                                                  n_threshold=min_bin_size, n_occurences=n_occurences,
-                                                  p_threshold=p_threshold) for column in columns)
+    if sep_value:
+        df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning_sep)
+                                                     (target, column, dataset[[column, target]], sep_value=sep_value,
+                                                      n_threshold=min_bin_size, n_occurences=n_occurences,
+                                                      p_threshold=p_threshold) for column in columns)
+    else:
+        df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning)
+                                                     (target, dataset[[column, target]],
+                                                      n_threshold=min_bin_size, n_occurences=n_occurences,
+                                                      p_threshold=p_threshold) for column in columns)
     return {i.variable[0]: i for i in df_list}
 
 
