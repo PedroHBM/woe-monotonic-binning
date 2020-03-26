@@ -27,10 +27,11 @@ def merge_bins(df, bins_index):
     return df.sort_index().reset_index(drop=True)
 
 
-def woe_binning_sep(target, column, dataset, sep_value, n_threshold, n_occurences=1, p_threshold=0.1):
+def woe_binning_sep(target, column, dataset, sep_value, n_threshold, n_occurences=1, p_threshold=0.1,
+                    merge_threshold=None):
     nan = None
     a = woe_binning(target, dataset[dataset[column] == sep_value][[target, column]], n_threshold,
-                    n_occurences=n_occurences, p_threshold=p_threshold)
+                    n_occurences=n_occurences, p_threshold=p_threshold, merge_threshold=merge_threshold)
     dist_bad = a.loc[0].bads / dataset[target].sum()
     dist_good = a.loc[0].goods / (dataset.shape[0] - dataset[target].sum())
     a.at[0, 'woe'] = np.log(dist_bad / dist_good)
@@ -38,7 +39,7 @@ def woe_binning_sep(target, column, dataset, sep_value, n_threshold, n_occurence
     a.at[0, 'dist_bad'] = dist_bad
     a.at[0, 'iv_components'] = (dist_bad - dist_good) * a.at[0, 'woe']
     b = woe_binning(target, dataset[dataset[column] != sep_value][[target, column]], n_threshold,
-                    n_occurences=n_occurences, p_threshold=p_threshold)
+                    n_occurences=n_occurences, p_threshold=p_threshold, merge_threshold=merge_threshold)
     if np.isnan(b.loc[b.shape[0] - 1, 'interval_start_include']):
         nan_line = b.loc[b.shape[0] - 1]
         b = b[:-1]
@@ -72,7 +73,8 @@ def woe_binning_sep(target, column, dataset, sep_value, n_threshold, n_occurence
     return ret
 
 
-def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1, sep_value=None):
+def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_threshold=0.1, sep_value=None,
+                      merge_threshold=None):
     from math import ceil
 
     nprocs = mp.cpu_count()
@@ -85,16 +87,19 @@ def batch_woe_binning(target, dataset, n_threshold=None, n_occurences=1, p_thres
         df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning_sep)
                                                      (target, column, dataset[[column, target]], sep_value=sep_value,
                                                       n_threshold=min_bin_size, n_occurences=n_occurences,
-                                                      p_threshold=p_threshold) for column in columns)
+                                                      p_threshold=p_threshold, merge_threshold=merge_threshold)
+                                                     for column in columns)
     else:
         df_list = Parallel(n_jobs=nprocs, verbose=5)(delayed(woe_binning)
                                                      (target, dataset[[column, target]],
                                                       n_threshold=min_bin_size, n_occurences=n_occurences,
-                                                      p_threshold=p_threshold) for column in columns)
+                                                      p_threshold=p_threshold, merge_threshold=merge_threshold)
+                                                     for column in columns)
     return {i.variable[0]: i for i in df_list}
 
 
-def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, sort_overload=None):
+def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, sort_overload=None,
+                merge_threshold=None):
 
     column = dataset.columns[dataset.columns != target][0]
     sorted_dataset = dataset.sort_values(by=[column])
@@ -238,6 +243,16 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     woe_summary["woe"] = np.log(woe_summary["dist_bad"] / woe_summary["dist_good"])
 
     woe_summary["iv_components"] = (woe_summary["dist_bad"] - woe_summary["dist_good"]) * woe_summary["woe"]
+
+    if merge_threshold:
+        while True:
+            for i in range(woe_summary.dropna().shape[0] - 1):
+                if abs(abs(woe_summary.loc[i, 'woe']) - abs(woe_summary.loc[i + 1, 'woe'])) / abs(woe_summary.loc[i, 'woe']) \
+                        <= merge_threshold:
+                    woe_summary = merge_bins(woe_summary, [i, i + 1])
+                    break
+            if i == woe_summary.dropna().shape[0] - 2:
+                break
 
     return woe_summary
 
