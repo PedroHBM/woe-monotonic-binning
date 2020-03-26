@@ -246,9 +246,11 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
 
     if merge_threshold:
         while True:
+            if woe_summary.dropna().shape[0] <= 1:
+                break
             for i in range(woe_summary.dropna().shape[0] - 1):
-                if abs(abs(woe_summary.loc[i, 'woe']) - abs(woe_summary.loc[i + 1, 'woe'])) / abs(woe_summary.loc[i, 'woe']) \
-                        <= merge_threshold:
+                if abs(abs(woe_summary.loc[i, 'woe']) - abs(woe_summary.loc[i + 1, 'woe'])) \
+                        / abs(woe_summary.loc[i, 'woe']) <= merge_threshold:
                     woe_summary = merge_bins(woe_summary, [i, i + 1])
                     break
             if i == woe_summary.dropna().shape[0] - 2:
