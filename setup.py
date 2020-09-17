@@ -2,13 +2,13 @@ from distutils.core import setup
 setup(
   name='woe-monotonic-binning',
   packages=['woe_monotonic_binning'],
-  version='0.4.3',
+  version='0.4.4',
   license='MIT',
   description='Optimal binning algorithm and function to apply on a pandas DataFrame',
   author='PEDRO HENRIQUE BAUMGRATZ MEIRELLES',
   author_email='pedrohbm@poli.ufrj.br',
   url='https://github.com/PedroHBM/woe-monotonic-binning',
-  download_url='https://github.com/PedroHBM/woe-monotonic-binning/archive/v0.4.3-alpha.tar.gz',
+  download_url='https://github.com/PedroHBM/woe-monotonic-binning/archive/v0.4.4-alpha.tar.gz',
   keywords=['WOE', 'BINNING', 'IV', 'LOGISTIC', 'REGRESSION'],
   install_requires=[            
           'pandas',
