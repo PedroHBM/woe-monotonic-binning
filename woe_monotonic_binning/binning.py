@@ -104,7 +104,7 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     if dataset.columns[0] == dataset.columns[1]:
         return pd.DataFrame(columns=['variable', 'interval_start_include', 'interval_end_exclude', 'size', 'mean',
                                      'bads', 'goods', 'dist_good', 'dist_bad', 'woe', 'iv_components'],
-                            data=[dataset.columns[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
+                            data=[[dataset.columns[1], 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]])
     column = dataset.columns[dataset.columns != target][0]
     sorted_dataset = dataset.sort_values(by=[column])
     size = sorted_dataset.shape[0]
