@@ -11,8 +11,8 @@ def unpack_woe(args):
 
 def merge_bins(df, bins_index):
     bins_index.sort()
-    interval_start_include = df.loc[bins_index[0]].interval_start_include
-    interval_end_exclude = df.loc[bins_index[-1]].interval_end_exclude
+    interval_start_include = df.loc[bins_index[0], 'interval_start_include']
+    interval_end_exclude = df.loc[bins_index[-1], 'interval_end_exclude']
     df_indexed = df[bins_index[0]: bins_index[-1] + 1]
     size = df_indexed['size'].sum()
     bads = df_indexed.bads.sum()
@@ -196,7 +196,7 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
                 summary["mean"] * summary["size"] < n_occurences) | (
                             summary["next_mean"] * summary["next_size"] < n_occurences)
 
-        summary[condition].p_value = summary[condition].p_value + 1
+        summary.loc[condition, 'p_value'] = summary.loc[condition, 'p_value'] + 1
 
         summary["p_value"] = summary.apply(
             lambda row: row["p_value"] + 1 if (row["size"] < n_threshold) | (row["next_size"] < n_threshold) |
@@ -223,9 +223,9 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
 
     woe_summary = summary[[column, "size", "mean"]]
     woe_summary.columns = ["interval_start_include", "size", "mean"]
-    woe_summary["interval_end_exclude"] = woe_summary.interval_start_include.shift(-1).fillna(interval_end)
-    woe_summary.interval_start_include.loc[0] = interval_end * -1
-    woe_summary["variable"] = column
+    woe_summary.loc[:, "interval_end_exclude"] = woe_summary.interval_start_include.shift(-1).fillna(interval_end).copy()
+    woe_summary.loc[0, 'interval_start_include'] = interval_end * -1
+    woe_summary.loc[:, "variable"] = column
     woe_summary = woe_summary[["variable", "interval_start_include", "interval_end_exclude", "size", "mean"]]
 
     if dataset[column].isna().sum() > 0:
