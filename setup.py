@@ -2,7 +2,7 @@ from distutils.core import setup
 setup(
   name='woe-monotonic-binning',
   packages=['woe_monotonic_binning'],
-  version='0.4.5',
+  version='0.4.6',
   license='MIT',
   description='Optimal binning algorithm and function to apply on a pandas DataFrame',
   author='PEDRO HENRIQUE BAUMGRATZ MEIRELLES',
