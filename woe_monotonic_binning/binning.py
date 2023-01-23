@@ -4,6 +4,8 @@ from scipy import stats
 import multiprocessing as mp
 from joblib import Parallel, delayed
 
+pd.options.mode.chained_assignment = None
+
 
 def unpack_woe(args):
     return woe_binning(*args)
@@ -223,9 +225,9 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
 
     woe_summary = summary[[column, "size", "mean"]]
     woe_summary.columns = ["interval_start_include", "size", "mean"]
-    woe_summary.loc[:, "interval_end_exclude"] = woe_summary.interval_start_include.shift(-1).fillna(interval_end).copy()
-    woe_summary.loc[0, 'interval_start_include'] = interval_end * -1
-    woe_summary.loc[:, "variable"] = column
+    woe_summary["interval_end_exclude"] = woe_summary.interval_start_include.shift(-1).fillna(interval_end).to_list()
+    woe_summary['interval_start_include'] = interval_end * -1
+    woe_summary["variable"] = column
     woe_summary = woe_summary[["variable", "interval_start_include", "interval_end_exclude", "size", "mean"]]
 
     if dataset[column].isna().sum() > 0:
