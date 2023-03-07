@@ -177,6 +177,8 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
         if dels == 0:
             break
 
+    empty = np.empty(100)
+    empty[:] = np.nan
     while True:
         summary["next_mean"] = summary["mean"].shift(-1)
         summary["next_size"] = summary["size"].shift(-1)
@@ -192,7 +194,8 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
         summary["z_value"] = (summary["mean"] - summary["next_mean"]) / np.sqrt(
             summary["updated_std"] * (1 / summary["size"] + 1 / summary["next_size"]))
 
-        summary["p_value"] = stats.norm.sf(summary["z_value"])
+        summary["p_value"] = np.concatenate((stats.norm.sf(summary[summary["z_value"].notna()]["z_value"]), empty),
+                                            axis=None)[:summary.shape[0]]
 
         condition = (summary["size"] < n_threshold) | (summary["next_size"] < n_threshold) | (
                 summary["mean"] * summary["size"] < n_occurences) | (
@@ -200,11 +203,11 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
 
         summary.loc[condition, 'p_value'] = summary.loc[condition, 'p_value'] + 1
 
-        summary["p_value"] = summary.apply(
-            lambda row: row["p_value"] + 1 if (row["size"] < n_threshold) | (row["next_size"] < n_threshold) |
-                                              (row["mean"] * row["size"] < n_occurences) |
-                                              (row["next_mean"] * row["next_size"] < n_occurences)
-            else row["p_value"], axis=1)
+        # summary["p_value"] = summary.apply(
+        #     lambda row: row["p_value"] + 1 if (row["size"] < n_threshold) | (row["next_size"] < n_threshold) |
+        #                                       (row["mean"] * row["size"] < n_occurences) |
+        #                                       (row["next_mean"] * row["next_size"] < n_occurences)
+        #     else row["p_value"], axis=1)
 
         max_p = max(summary["p_value"])
         row_of_maxp = summary['p_value'].idxmax()
