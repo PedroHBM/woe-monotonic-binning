@@ -192,7 +192,7 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
         summary["z_value"] = (summary["mean"] - summary["next_mean"]) / np.sqrt(
             summary["updated_std"] * (1 / summary["size"] + 1 / summary["next_size"]))
 
-        summary["p_value"] = 1 - stats.norm.cdf(summary["z_value"])
+        summary["p_value"] = stats.norm.sf(summary["z_value"])
 
         condition = (summary["size"] < n_threshold) | (summary["next_size"] < n_threshold) | (
                 summary["mean"] * summary["size"] < n_occurences) | (
