@@ -226,7 +226,7 @@ def woe_binning(target, dataset, n_threshold, n_occurences=1, p_threshold=0.1, s
     woe_summary = summary[[column, "size", "mean"]]
     woe_summary.columns = ["interval_start_include", "size", "mean"]
     woe_summary["interval_end_exclude"] = woe_summary.interval_start_include.shift(-1).fillna(interval_end).to_list()
-    woe_summary['interval_start_include'] = interval_end * -1
+    woe_summary.loc[0, 'interval_start_include'] = interval_end * -1
     woe_summary["variable"] = column
     woe_summary = woe_summary[["variable", "interval_start_include", "interval_end_exclude", "size", "mean"]]
 
